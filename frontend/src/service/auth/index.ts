@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use server";
+
 import { FieldValue } from "react-hook-form";
+import { jwtDecode } from "jwt-decode";
+import { cookies } from "next/headers";
+
 
 export const loginUser = async(userData: FieldValue<any>)=>{
     try {
@@ -10,9 +15,30 @@ export const loginUser = async(userData: FieldValue<any>)=>{
             },
             body: JSON.stringify(userData)
         })
-        const result = await res.json()
+        const result = await res.json();
+        const storeCookies = await cookies();
+        if(result.success){
+            storeCookies.set('token', result.data.accessToken);
+            storeCookies.set('refreshToken', result.data.refreshToken);
+
+        }
         return result;
     } catch (error: any) {
         return Error(error)
+    }
+};
+
+
+export const getUser = async()=>{
+    const storedToken = await cookies();
+    const token = storedToken.get('token')?.value;
+    // console.log(token);
+
+    let decodeData = null;
+    if(token){
+        decodeData = await jwtDecode(token);
+        return decodeData;
+    }else{
+        return null;
     }
 }
